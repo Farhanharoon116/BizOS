@@ -13,6 +13,7 @@ import { Label } from '../ui/label'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '../ui/select'
 import { CATEGORIES } from '../../constants'
 import { useProductStore, generateSKU } from '../../store/productStore'
+import type { Product } from '../../types'
 
 const schema = z.object({
   name:         z.string().min(2, 'Name is required'),
@@ -29,24 +30,36 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 interface Props {
+  product: Product | null
   open: boolean
   onOpenChange: (v: boolean) => void
 }
 
-export function AddProductModal({ open, onOpenChange }: Props) {
-  const addProduct = useProductStore((s) => s.addProduct)
+export function EditProductModal({ product, open, onOpenChange }: Props) {
+  const updateProduct = useProductStore((s) => s.updateProduct)
+
   const { register, handleSubmit, reset, setValue, watch, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema) as Resolver<FormData>,
-    defaultValues: { unit: 'pcs', stock: 0, reorderPoint: 5, taxRate: 17 },
   })
 
   const watchedName = watch('name')
   const watchedCategory = watch('category')
 
-  // Reset form when modal closes
   useEffect(() => {
-    if (!open) reset()
-  }, [open, reset])
+    if (product) {
+      reset({
+        name: product.name,
+        sku: product.sku,
+        category: product.category,
+        price: product.price,
+        costPrice: product.costPrice,
+        stock: product.stock,
+        reorderPoint: product.reorderPoint,
+        unit: product.unit,
+        taxRate: product.taxRate,
+      })
+    }
+  }, [product, reset])
 
   function handleAutoSKU() {
     const name = watchedName || ''
@@ -59,46 +72,45 @@ export function AddProductModal({ open, onOpenChange }: Props) {
   }
 
   function onSubmit(data: FormData) {
-    addProduct(data)
-    toast.success(`Product "${data.name}" added successfully`)
-    reset()
+    if (!product) return
+    updateProduct(product.id, data)
+    toast.success(`Product "${data.name}" updated`)
     onOpenChange(false)
   }
+
+  if (!product) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>Edit Product</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 mt-2">
           <div className="grid grid-cols-2 gap-4">
-            {/* Product Name */}
             <div className="col-span-2 space-y-1.5">
-              <Label htmlFor="name">Product Name</Label>
-              <Input id="name" placeholder="e.g. Dairy Milk 250ml" {...register('name')} />
+              <Label htmlFor="ename">Product Name</Label>
+              <Input id="ename" {...register('name')} />
               {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
             </div>
 
-            {/* SKU with auto-generate */}
             <div className="space-y-1.5">
-              <Label htmlFor="sku">SKU</Label>
+              <Label htmlFor="esku">SKU</Label>
               <div className="flex gap-2">
-                <Input id="sku" placeholder="DML-250-NTL" {...register('sku')} />
-                <Button type="button" variant="outline" size="icon" onClick={handleAutoSKU} title="Auto-generate SKU">
+                <Input id="esku" {...register('sku')} />
+                <Button type="button" variant="outline" size="icon" onClick={handleAutoSKU} title="Re-generate SKU">
                   <Wand2 className="w-4 h-4" />
                 </Button>
               </div>
               {errors.sku && <p className="text-xs text-red-500">{errors.sku.message}</p>}
             </div>
 
-            {/* Category */}
             <div className="space-y-1.5">
               <Label>Category</Label>
-              <Select onValueChange={(v) => setValue('category', v, { shouldValidate: true })}>
+              <Select value={watchedCategory} onValueChange={(v) => setValue('category', v, { shouldValidate: true })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select category" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.filter((c) => c !== 'All Products').map((cat) => (
@@ -109,41 +121,34 @@ export function AddProductModal({ open, onOpenChange }: Props) {
               {errors.category && <p className="text-xs text-red-500">{errors.category.message}</p>}
             </div>
 
-            {/* Sale Price */}
             <div className="space-y-1.5">
-              <Label htmlFor="price">Sale Price (Rs)</Label>
-              <Input id="price" type="number" min="0" step="0.01" placeholder="0" {...register('price')} />
+              <Label htmlFor="eprice">Sale Price (Rs)</Label>
+              <Input id="eprice" type="number" min="0" step="0.01" {...register('price')} />
               {errors.price && <p className="text-xs text-red-500">{errors.price.message}</p>}
             </div>
 
-            {/* Cost Price */}
             <div className="space-y-1.5">
-              <Label htmlFor="costPrice">Cost Price (Rs)</Label>
-              <Input id="costPrice" type="number" min="0" step="0.01" placeholder="0" {...register('costPrice')} />
+              <Label htmlFor="ecostPrice">Cost Price (Rs)</Label>
+              <Input id="ecostPrice" type="number" min="0" step="0.01" {...register('costPrice')} />
               {errors.costPrice && <p className="text-xs text-red-500">{errors.costPrice.message}</p>}
             </div>
 
-            {/* Stock */}
             <div className="space-y-1.5">
-              <Label htmlFor="stock">Initial Stock</Label>
-              <Input id="stock" type="number" min="0" placeholder="0" {...register('stock')} />
+              <Label htmlFor="estock">Stock</Label>
+              <Input id="estock" type="number" min="0" {...register('stock')} />
               {errors.stock && <p className="text-xs text-red-500">{errors.stock.message}</p>}
             </div>
 
-            {/* Reorder Point */}
             <div className="space-y-1.5">
-              <Label htmlFor="reorderPoint">Reorder Point</Label>
-              <Input id="reorderPoint" type="number" min="0" placeholder="5" {...register('reorderPoint')} />
+              <Label htmlFor="ereorderPoint">Reorder Point</Label>
+              <Input id="ereorderPoint" type="number" min="0" {...register('reorderPoint')} />
               {errors.reorderPoint && <p className="text-xs text-red-500">{errors.reorderPoint.message}</p>}
             </div>
 
-            {/* Unit */}
             <div className="space-y-1.5">
               <Label>Unit</Label>
-              <Select defaultValue="pcs" onValueChange={(v) => setValue('unit', v)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+              <Select value={watch('unit')} onValueChange={(v) => setValue('unit', v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {['pcs', 'kg', 'g', 'L', 'ml', 'box', 'dozen'].map((u) => (
                     <SelectItem key={u} value={u}>{u}</SelectItem>
@@ -152,10 +157,9 @@ export function AddProductModal({ open, onOpenChange }: Props) {
               </Select>
             </div>
 
-            {/* Tax Rate */}
             <div className="space-y-1.5">
-              <Label htmlFor="taxRate">Tax Rate (%)</Label>
-              <Input id="taxRate" type="number" min="0" max="100" step="0.1" placeholder="17" {...register('taxRate')} />
+              <Label htmlFor="etaxRate">Tax Rate (%)</Label>
+              <Input id="etaxRate" type="number" min="0" max="100" step="0.1" {...register('taxRate')} />
               {errors.taxRate && <p className="text-xs text-red-500">{errors.taxRate.message}</p>}
             </div>
           </div>
@@ -165,7 +169,7 @@ export function AddProductModal({ open, onOpenChange }: Props) {
               Cancel
             </Button>
             <Button type="submit" className="flex-1">
-              Add Product
+              Save Changes
             </Button>
           </div>
         </form>

@@ -1,9 +1,15 @@
-import { Trash2, Plus, Minus, CreditCard, Banknote, Smartphone } from 'lucide-react'
+import { useState } from 'react'
+import { Trash2, Plus, Minus, CreditCard, Banknote, Smartphone, Pause, RefreshCw } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCartStore, useCartTotals } from '../../store/cartStore'
+import { useSaleStore } from '../../store/saleStore'
+import { useCustomerStore } from '../../store/customerStore'
 import { formatPKR } from '../../lib/format'
 import { cn } from '../../lib/utils'
 import { toast } from 'sonner'
+import { CustomerSelector } from './CustomerSelector'
+import { ReceiptModal } from './ReceiptModal'
+import type { CompletedSale } from '../../store/saleStore'
 
 const PAYMENT_METHODS = [
   { id: 'cash' as const,      label: 'Cash',      icon: Banknote },
@@ -13,25 +19,90 @@ const PAYMENT_METHODS = [
 ]
 
 export function OrderPanel() {
-  const { items, paymentMethod, removeItem, updateQty, clearCart, setPaymentMethod } = useCartStore()
+  const { items, paymentMethod, customerId, customerName, removeItem, updateQty, clearCart, setPaymentMethod } = useCartStore()
   const { subtotal, tax, discount, total } = useCartTotals()
+  const recordSale = useSaleStore((s) => s.recordSale)
+  const addSale = useCustomerStore((s) => s.addSale)
   const cartItems = Object.values(items)
+
+  const [manualDiscount, setManualDiscount] = useState('')
+  const [receipt, setReceipt] = useState<CompletedSale | null>(null)
+  const [receiptOpen, setReceiptOpen] = useState(false)
+  const [held, setHeld] = useState<typeof items | null>(null)
+
+  const extraDiscount = parseFloat(manualDiscount) || 0
+  const finalTotal = Math.max(0, total - extraDiscount)
+  const totalDiscount = discount + extraDiscount
 
   function handleCharge() {
     if (cartItems.length === 0) {
       toast.error('Cart is empty')
       return
     }
-    toast.success(`Sale of ${formatPKR(total)} processed via ${paymentMethod}`)
+    const sale = recordSale({
+      items: cartItems,
+      subtotal,
+      tax,
+      discount: totalDiscount,
+      total: finalTotal,
+      paymentMethod,
+      customerId,
+      customerName,
+    })
+    if (customerId) addSale(customerId, finalTotal)
+    toast.success(`Sale of ${formatPKR(finalTotal)} processed via ${paymentMethod}`)
+    setManualDiscount('')
     clearCart()
+    setReceipt(sale)
+    setReceiptOpen(true)
+  }
+
+  function handleHold() {
+    if (cartItems.length === 0) return
+    setHeld(items)
+    clearCart()
+    setManualDiscount('')
+    toast.info('Order held')
+  }
+
+  function handleRecall() {
+    if (!held) return
+    // Restore held items
+    Object.values(held).forEach((item) => {
+      useCartStore.setState((s) => ({
+        items: { ...s.items, [item.id]: item },
+      }))
+    })
+    setHeld(null)
+    toast.info('Held order recalled')
   }
 
   return (
     <div className="flex flex-col h-full bg-white border-l border-gray-100">
       {/* Header */}
-      <div className="px-5 py-4 border-b border-gray-100">
-        <h2 className="font-semibold text-gray-900">Current Order</h2>
-        <p className="text-xs text-gray-400 mt-0.5">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''}</p>
+      <div className="px-5 py-3 border-b border-gray-100">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold text-gray-900">Current Order</h2>
+          <div className="flex gap-1">
+            {held && (
+              <button
+                onClick={handleRecall}
+                className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 transition-colors"
+              >
+                <RefreshCw className="w-3 h-3" /> Recall
+              </button>
+            )}
+            <button
+              onClick={handleHold}
+              disabled={cartItems.length === 0}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              <Pause className="w-3 h-3" /> Hold
+            </button>
+          </div>
+        </div>
+        <CustomerSelector />
+        <p className="text-xs text-gray-400 mt-1">{cartItems.length} item{cartItems.length !== 1 ? 's' : ''}</p>
       </div>
 
       {/* Cart items */}
@@ -90,7 +161,7 @@ export function OrderPanel() {
       </div>
 
       {/* Totals + Payment */}
-      <div className="border-t border-gray-100 px-5 py-4 space-y-4">
+      <div className="border-t border-gray-100 px-5 py-4 space-y-3">
         {/* Totals */}
         <div className="space-y-1.5 text-sm">
           <div className="flex justify-between text-gray-500">
@@ -107,9 +178,29 @@ export function OrderPanel() {
               <span>-{formatPKR(discount)}</span>
             </div>
           )}
+
+          {/* Manual discount input */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500 shrink-0">Extra discount (Rs)</span>
+            <input
+              type="number"
+              min="0"
+              value={manualDiscount}
+              onChange={(e) => setManualDiscount(e.target.value)}
+              placeholder="0"
+              className="w-24 h-7 px-2 rounded border border-gray-200 text-sm text-right ml-auto focus:outline-none focus:ring-1 focus:ring-brand-500"
+            />
+          </div>
+          {extraDiscount > 0 && (
+            <div className="flex justify-between text-emerald-600">
+              <span>Manual discount</span>
+              <span>-{formatPKR(extraDiscount)}</span>
+            </div>
+          )}
+
           <div className="flex justify-between font-bold text-gray-900 text-base pt-1 border-t border-gray-100">
             <span>Total</span>
-            <span>{formatPKR(total)}</span>
+            <span>{formatPKR(finalTotal)}</span>
           </div>
         </div>
 
@@ -138,9 +229,11 @@ export function OrderPanel() {
           disabled={cartItems.length === 0}
           className="w-full h-12 rounded-xl bg-brand-500 hover:bg-brand-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold transition-colors"
         >
-          Charge {cartItems.length > 0 ? formatPKR(total) : ''}
+          Charge {cartItems.length > 0 ? formatPKR(finalTotal) : ''}
         </button>
       </div>
+
+      <ReceiptModal sale={receipt} open={receiptOpen} onOpenChange={setReceiptOpen} />
     </div>
   )
 }
