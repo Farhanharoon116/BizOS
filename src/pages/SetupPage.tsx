@@ -280,10 +280,14 @@ export function SetupPage() {
                   </div>
                   <Field label="DEFAULT TAX RATE (%)" className="mb-8 max-w-xs">
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
+                      pattern="[0-9]*\.?[0-9]*"
                       placeholder="17"
                       value={taxRate}
-                      onChange={(e) => setTaxRate(e.target.value)}
+                      onChange={(e) => {
+                        if (/^\d*\.?\d*$/.test(e.target.value)) setTaxRate(e.target.value)
+                      }}
                       className={inputCls}
                     />
                   </Field>
