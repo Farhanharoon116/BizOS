@@ -15,7 +15,7 @@ const NAV_ITEMS = [
   { label: 'CRM',        icon: UserCircle,      to: '/crm' },
   { label: 'Accounting', icon: BookOpen,        to: '/accounting' },
   { label: 'Reports',    icon: BarChart2,       to: '/reports' },
-  { label: 'Restaurant', icon: ChefHat,         to: '/restaurant/floor' },
+  { label: 'Restaurant', icon: ChefHat,         to: '/restaurant' },
   { label: 'Settings',   icon: Settings,        to: '/settings' },
 ]
 
