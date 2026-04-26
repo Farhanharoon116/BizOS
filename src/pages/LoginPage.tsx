@@ -37,12 +37,12 @@ export function LoginPage() {
   }
 
   function handleVerify() {
-    navigate('/')
+    navigate('/setup')
   }
 
   function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault()
-    navigate('/')
+    navigate('/setup')
   }
 
   const allOtpFilled = otp.every((d) => d !== '')
@@ -146,7 +146,7 @@ export function LoginPage() {
                     {otpSent ? 'Sent to your number' : 'Enter phone to receive OTP'}
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 justify-center">
                   {Array.from({ length: OTP_LENGTH }).map((_, i) => (
                     <input
                       key={i}
@@ -158,7 +158,7 @@ export function LoginPage() {
                       onChange={(e) => handleOtpChange(i, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(i, e)}
                       className={cn(
-                        'flex-1 h-12 text-center text-lg font-bold text-white rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand-500',
+                        'w-10 h-10 text-center text-lg font-bold text-white rounded-xl outline-none transition-all focus:ring-2 focus:ring-brand-500',
                         otp[i]
                           ? 'border-brand-500'
                           : 'border-white/10',
