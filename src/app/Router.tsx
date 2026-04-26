@@ -36,7 +36,7 @@ export function Router() {
         <Route path="pos" element={<RestaurantPOSPage />} />
       </Route>
 
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   )
 }
