@@ -63,6 +63,7 @@ export const useCustomerStore = create<CustomerState>((set) => ({
       customers: state.customers.map((c) => {
         if (c.id !== id) return c
         const totalSpent = c.totalSpent + amount
+        // 1 loyalty point earned for every Rs 100 spent
         const loyaltyPoints = c.loyaltyPoints + Math.floor(amount / 100)
         const visitCount = c.visitCount + 1
         return { ...c, totalSpent, loyaltyPoints, visitCount, tier: tier(totalSpent) }

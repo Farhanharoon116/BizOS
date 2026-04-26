@@ -67,12 +67,10 @@ export function OrderPanel() {
 
   function handleRecall() {
     if (!held) return
-    // Restore held items
-    Object.values(held).forEach((item) => {
-      useCartStore.setState((s) => ({
-        items: { ...s.items, [item.id]: item },
-      }))
-    })
+    // Batch-restore all held items in a single setState call
+    useCartStore.setState((s) => ({
+      items: { ...s.items, ...held },
+    }))
     setHeld(null)
     toast.info('Held order recalled')
   }

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { Printer, X } from 'lucide-react'
+import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../ui/dialog'
 import { Button } from '../ui/button'
 import { formatPKR } from '../../lib/format'
@@ -18,7 +19,10 @@ export function ReceiptModal({ sale, open, onOpenChange }: Props) {
     if (!printRef.current) return
     const content = printRef.current.innerHTML
     const w = window.open('', '_blank', 'width=400,height=600')
-    if (!w) return
+    if (!w) {
+      toast.error('Print blocked. Please allow pop-ups for this site and try again.')
+      return
+    }
     w.document.write(`
       <html><head><title>Receipt ${sale?.receiptNumber}</title>
       <style>
