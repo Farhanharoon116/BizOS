@@ -10,6 +10,7 @@ interface CartState {
   removeItem: (id: number) => void
   updateQty: (id: number, qty: number) => void
   clearCart: () => void
+  recallCart: (heldItems: Record<number, CartItem>) => void
   setCustomer: (id: string, name: string) => void
   clearCustomer: () => void
   setPaymentMethod: (method: CartState['paymentMethod']) => void
@@ -54,6 +55,9 @@ export const useCartStore = create<CartState>((set) => ({
   }),
 
   clearCart: () => set({ items: {}, customerId: null, customerName: null }),
+
+  recallCart: (heldItems) =>
+    set((state) => ({ items: { ...state.items, ...heldItems } })),
 
   setCustomer: (id, name) => set({ customerId: id, customerName: name }),
 

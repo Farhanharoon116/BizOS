@@ -19,7 +19,7 @@ const PAYMENT_METHODS = [
 ]
 
 export function OrderPanel() {
-  const { items, paymentMethod, customerId, customerName, removeItem, updateQty, clearCart, setPaymentMethod } = useCartStore()
+  const { items, paymentMethod, customerId, customerName, removeItem, updateQty, clearCart, recallCart, setPaymentMethod } = useCartStore()
   const { subtotal, tax, discount, total } = useCartTotals()
   const recordSale = useSaleStore((s) => s.recordSale)
   const addSale = useCustomerStore((s) => s.addSale)
@@ -67,10 +67,8 @@ export function OrderPanel() {
 
   function handleRecall() {
     if (!held) return
-    // Batch-restore all held items in a single setState call
-    useCartStore.setState((s) => ({
-      items: { ...s.items, ...held },
-    }))
+    // Batch-restore all held items via the store action
+    recallCart(held)
     setHeld(null)
     toast.info('Held order recalled')
   }
