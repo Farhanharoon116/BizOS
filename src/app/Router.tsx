@@ -17,11 +17,12 @@ import { RestaurantPOSPage } from '../pages/RestaurantPOSPage'
 export function Router() {
   return (
     <Routes>
+      <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/setup" element={<SetupPage />} />
 
       <Route element={<AppLayout />}>
-        <Route index element={<DashboardPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="pos" element={<POSPage />} />
         <Route path="inventory" element={<InventoryPage />} />
         <Route path="employees" element={<EmployeesPage />} />

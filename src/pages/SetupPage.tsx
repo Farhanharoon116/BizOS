@@ -65,7 +65,7 @@ export function SetupPage() {
 
   function goNext() {
     if (currentStep < 5) setCurrentStep((s) => s + 1)
-    else navigate('/')
+    else navigate('/dashboard')
   }
 
   function goBack() {
